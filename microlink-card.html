@@ -1,0 +1,213 @@
+<link rel="import" href="../polymer/polymer-element.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../iron-image/iron-image.html">
+
+<dom-module id="microlink-card">
+  <template>
+    <style>
+      :host {
+        cursor: pointer;
+        display: block;
+        border-radius: var(--microlink-border-radius, 5px);
+        box-shadow: var(--microlink-box-shadow,
+        0 2px 2px 0 rgba(0, 0, 0, 0.14),
+        0 1px 5px 0 rgba(0, 0, 0, 0.12),
+        0 3px 1px -2px rgba(0, 0, 0, 0.2));
+        --iron-image-width: 100%;
+        overflow: hidden;
+      }
+
+      :host-context([scale-on-hover]) a:hover .header iron-image {
+        transform: scale(1.05);
+      }
+
+      a {
+        text-decoration: none;
+        display: block;
+      }
+
+      h1 {
+        font-size: var(--microlink-content-title-size, 20px);
+        color: var(--microlink-content-color, #333333);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 0;
+      }
+
+      p {
+        color: #656565;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0;
+        margin-top: 2px;
+        font-size: var(--microlink-content-text-size, 14px);
+      }
+
+      section {
+        padding: var(--microlink-content-padding, 10px);
+      }
+
+      .header {
+        overflow: hidden;
+        max-height: var(--microlink-header-max-height, 150px);
+        text-align: center;
+      }
+
+      .header iron-image {
+        position: relative;
+        width: 100%;
+        transition: transform 0.5s;
+      }
+
+      .header iron-image:after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .main {
+        box-shadow: 2px 1px 40px 45px #00000080;
+        position: relative;
+      }
+
+      .main_logo {
+        width: 40px;
+        display: inline-block;
+        margin: var(--microlink-logo-margin, 0px 5px 0px 0px);
+        vertical-align: middle;
+      }
+
+      .main_text {
+        display: inline-block;
+        vertical-align: middle;
+        max-width: calc(100% - 50px);
+      }
+    </style>
+
+    <iron-ajax url="[[_fullUrl]]" id="microlinkAjax" method="GET" loading="{{loading}}" last-response="{{response}}">
+    </iron-ajax>
+
+    <a target="_blank" href="[[response.data.url]]">
+      <header class="header">
+        <iron-image src="[[response.data.image.url]]"></iron-image>
+      </header>
+
+      <section class="main">
+        <iron-image class="main_logo" src="[[_logo]]"></iron-image>
+        <div class="main_text">
+          <h1>[[response.data.title]]</h1>
+          <p>[[response.data.description]]</p>
+        </div>
+      </section>
+    </a>
+
+  </template>
+
+  <script>
+    /**
+     * `polymer-microlink`
+     * ### Styling
+     *
+     * `<paper-button>` provides the following custom properties and mixins
+     * for styling:
+     *
+     * Custom property | Description | Default
+     * ----------------|-------------|----------
+     * `--microlink-border-radius` | Border radius of the card | 5px
+     * `--microlink-box-shadow` | Shadow box of the card | 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12),0 3px 1px -2px rgba(0, 0, 0, 0.2)
+     * `--microlink-content-title-size` | Title font size| 20px
+     * `--microlink-content-text-size` | Description font size | 14px
+     * `--microlink-content-color` | Text color | #333333
+     * `--microlink-content-padding` | Content section padding | 20px
+     * `--microlink-header-max-height` | Max height of the header | 150px
+     *
+     * Polymer wrapper for https://microlink.io
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class MicrolinkCard extends Polymer.Element {
+      static get is() { return 'microlink-card'; }
+
+      static get properties() {
+        return {
+          /**
+          * Response data from microlinks ajax request
+          * @type {Object}
+          */
+          response: {
+            type: Object,
+            notifies: true,
+          },
+          /**
+          * Url to be analyzed by microlinks
+          *
+          * @type {String}
+          */
+          url: String,
+          /**
+          * API-KEY from microlinks
+          */
+          key: String,
+          /**
+          * Loading state of the AJAX request
+          *
+          * @type {Boolean}
+          */
+          loading: {
+            type: Boolean,
+            value: false,
+            reflectToAttribute: true,
+          },
+          /**
+          * Set if the image scale on hover
+          *
+          * @type {Boolean}
+          */
+          scaleOnHover: {
+            type: Boolean,
+            value: false,
+          },
+          _fullUrl: {
+            type: String,
+            computed: '_computeFullUrl(url, key)',
+            observer: '_getMicrolinkData'
+          },
+          _baseUrl: {
+            type: String,
+            readOnly: true,
+            value: 'https://api.microlink.io'
+          },
+          _logo: {
+            type: String,
+            computed: '_getLogo(response)'
+          }
+        };
+      }
+
+      _getLogo(response) {
+        const logo = response.data.logo;
+        if (!logo) { return false; }
+        return typeof logo === 'string' ? logo : logo.url;
+      }
+
+      _getMicrolinkData(url) {
+        if (!url) { return false; }
+        return this.shadowRoot.querySelector('#microlinkAjax').generateRequest();
+      }
+
+      _computeFullUrl(url, key) {
+        if (!url) { return null; }
+        return key ? `${this._baseUrl}?url=${url}?key=${key}` : `${this._baseUrl}?url=${url}`
+      }
+    }
+
+    window.customElements.define(MicrolinkCard.is, MicrolinkCard);
+  </script>
+</dom-module>
