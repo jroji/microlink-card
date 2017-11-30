@@ -2,6 +2,8 @@
 
 Polymer wrapper for https://microlink.io
 
+![alt text](https://i.imgur.com/PNjWBdf.png)
+
 ## Usage
 
 ```HTML
