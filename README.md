@@ -1,4 +1,4 @@
-# \<polymer-microlink\>
+# \<microlink-card\>
 
 Polymer wrapper for https://microlink.io
 
